@@ -1,0 +1,208 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@property --mx {
+  syntax: "<length-percentage>";
+  inherits: true;
+  initial-value: 50%;
+}
+@property --my {
+  syntax: "<length-percentage>";
+  inherits: true;
+  initial-value: 42%;
+}
+@property --spot-r {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 240px;
+}
+
+:root {
+  --mx: 50%;
+  --my: 42%;
+  --spot-r: 240px;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: #09090b;
+  color: #ececec;
+}
+
+/* Signature dot-grid from gatekeeper-v3 */
+.dot-grid {
+  background-image: radial-gradient(#27272a 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Cursor-following spotlight mask — soft circular reveal */
+.spotlight-mask {
+  -webkit-mask-image: radial-gradient(
+    circle var(--spot-r) at var(--mx) var(--my),
+    #000 0%,
+    #000 55%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    circle var(--spot-r) at var(--mx) var(--my),
+    #000 0%,
+    #000 55%,
+    transparent 100%
+  );
+  will-change: -webkit-mask-image, mask-image;
+}
+
+/* Amber halo that rides with the cursor */
+.spotlight-halo {
+  background: radial-gradient(
+    circle var(--spot-r) at var(--mx) var(--my),
+    rgba(245, 158, 11, 0.16) 0%,
+    rgba(245, 158, 11, 0.05) 45%,
+    transparent 72%
+  );
+}
+
+.spotlight-ring {
+  position: absolute;
+  left: var(--mx);
+  top: var(--my);
+  width: calc(var(--spot-r) * 2);
+  height: calc(var(--spot-r) * 2);
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  box-shadow:
+    0 0 30px rgba(245, 158, 11, 0.12),
+    inset 0 0 40px rgba(245, 158, 11, 0.08);
+  pointer-events: none;
+}
+
+/* Fallback drift for touch devices — the spotlight patrols on its own */
+@media (hover: none) {
+  .spotlight-auto {
+    animation: patrol 14s ease-in-out infinite;
+  }
+}
+
+@keyframes patrol {
+  0%,
+  100% {
+    --mx: 30%;
+    --my: 35%;
+  }
+  25% {
+    --mx: 70%;
+    --my: 40%;
+  }
+  50% {
+    --mx: 62%;
+    --my: 70%;
+  }
+  75% {
+    --mx: 32%;
+    --my: 62%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spotlight-auto {
+    animation: none;
+  }
+}
+
+::selection {
+  background: #f59e0b;
+  color: #09090b;
+}
+
+.chart-svg svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ===== Smart Sorting showcase effects ===== */
+
+@keyframes gk-float {
+  0%, 100% { transform: translate(0, 0); opacity: 0.25; }
+  25% { opacity: 0.9; }
+  50% { transform: translate(var(--dx, 20px), var(--dy, -30px)); opacity: 0.35; }
+  75% { opacity: 0.8; }
+}
+
+@keyframes gk-dash {
+  to { stroke-dashoffset: -48; }
+}
+
+@keyframes gk-ripple {
+  from { r: 6; opacity: 0.9; }
+  to { r: 90; opacity: 0; }
+}
+
+@keyframes gk-ripple-el {
+  from { transform: translate(-50%, -50%) scale(1); opacity: 0.9; }
+  to { transform: translate(-50%, -50%) scale(8); opacity: 0; }
+}
+
+@keyframes gk-shimmer {
+  from { transform: translateX(-120%) skewX(-12deg); }
+  to { transform: translateX(240%) skewX(-12deg); }
+}
+
+@keyframes gk-flash {
+  0% { opacity: 0; }
+  25% { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+
+@keyframes gk-grid-drift {
+  from { background-position: 0 0; }
+  to { background-position: 0 48px; }
+}
+
+@keyframes gk-pulse-glow {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+
+.holo-grid {
+  background-image:
+    linear-gradient(rgba(6, 182, 212, 0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(6, 182, 212, 0.16) 1px, transparent 1px);
+  background-size: 48px 48px;
+  transform: perspective(600px) rotateX(62deg);
+  transform-origin: top center;
+  animation: gk-grid-drift 3.2s linear infinite;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 85%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.9), transparent 85%);
+}
+
+.glass-card {
+  background: rgba(24, 24, 27, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .holo-grid,
+  .gk-particle {
+    animation: none !important;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
+  header,
+  footer,
+  .dot-grid {
+    background-image: none !important;
+  }
+  #reportOut {
+    border: none;
+  }
+}
