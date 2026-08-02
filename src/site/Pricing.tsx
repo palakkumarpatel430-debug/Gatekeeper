@@ -14,7 +14,7 @@ export interface Plan {
 export const PLANS: Plan[] = [
   {
     name: "Per-Project",
-    price: 99,
+    price: 1,
     feats: ["Pay as you go", "1 active project", "Full sort entry & records", "CSV / JSON export", "Email support"],
   },
   {
