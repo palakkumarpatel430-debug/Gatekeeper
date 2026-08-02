@@ -79,7 +79,7 @@ export default function AuthPage({
         See premium plans →
       </button>
       <p className="mt-6 text-center font-mono text-[10px] uppercase tracking-[0.08em] text-zinc-600">
-        Demo gate — swap for Supabase Auth in production.
+        Secured by Supabase Auth.
       </p>
     </div>
   );
