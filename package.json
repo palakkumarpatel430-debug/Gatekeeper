@@ -8,7 +8,8 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "deploy": "vite build --outDir docs --emptyOutDir && git add docs/ && git diff --cached --quiet || git commit -m 'deploy: rebuild GitHub Pages' && git push origin main"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.111.0",
