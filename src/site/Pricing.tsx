@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, CreditCard, Lock } from "lucide-react";
+import { Check, CreditCard, Lock, ShieldCheck } from "lucide-react";
 import { useAuth } from "../lib/auth";
 import { supabase } from "../lib/supabase";
 import { Btn, Modal, ModalTitle } from "../components/ui";
@@ -37,9 +37,11 @@ export const PLANS: Plan[] = [
 
 export default function Pricing({
   onNeedAccount,
+  onGoToDashboard,
 }: {
   onNeedAccount: () => void;
   onUnlocked: () => void;
+  onGoToDashboard: () => void;
 }) {
   const { user } = useAuth();
   const [checkout, setCheckout] = useState<Plan | null>(null);
@@ -48,6 +50,7 @@ export default function Pricing({
 
   const choose = (p: Plan) => {
     if (!user) return onNeedAccount();
+    if (user.premium) return; // already paid — button is disabled below
     setError(null);
     setCheckout(p);
   };
@@ -91,7 +94,20 @@ export default function Pricing({
       title="One subscription. The whole control room."
       sub="Public visitors see this website. Members log into the live dashboard with their own data — nothing is shared between accounts."
     >
-      <div className="mt-10 grid gap-5 md:grid-cols-3">
+      {user?.premium && (
+        <div className="mt-8 flex flex-col items-center gap-4 rounded-xl border border-pass/30 bg-pass/5 px-6 py-8 text-center">
+          <ShieldCheck size={36} className="text-pass" />
+          <div>
+            <p className="text-lg font-bold text-white">You already have premium access</p>
+            <p className="mt-1 text-sm text-ink-soft">
+              Current plan: <span className="font-semibold text-white">{user.plan ?? "Premium"}</span>
+            </p>
+          </div>
+          <Btn onClick={onGoToDashboard}>Go to dashboard →</Btn>
+        </div>
+      )}
+
+      <div className={`mt-10 grid gap-5 md:grid-cols-3 ${user?.premium ? "pointer-events-none opacity-40" : ""}`}>
         {PLANS.map((p) => (
           <div
             key={p.name}
@@ -115,8 +131,8 @@ export default function Pricing({
                 </li>
               ))}
             </ul>
-            <Btn variant={p.tag ? "solid" : "ghost"} onClick={() => choose(p)}>
-              Get Premium
+            <Btn variant={p.tag ? "solid" : "ghost"} onClick={() => choose(p)} disabled={!!user?.premium}>
+              {user?.premium ? "Already active" : "Get Premium"}
             </Btn>
           </div>
         ))}

@@ -8,7 +8,6 @@ import {
   type ReactNode,
 } from "react";
 import type { DB } from "./types";
-import { seed } from "./seed";
 
 const BASE_KEY = "gatekeeper.v3";
 

@@ -73,6 +73,14 @@ function Shell() {
     if (route === "app" && !user?.premium) setRoute("home");
   }, [route, user]);
 
+  /* Premium users who land on pricing get sent straight to the dashboard. */
+  useEffect(() => {
+    if (route === "pricing" && user?.premium) {
+      setAppView("dash");
+      setRoute("app");
+    }
+  }, [route, user]);
+
   /* Wait for auth to load (user !== null), then write premium to Supabase.
      PAYMENT_PLAN is module-level so it survives StoreProvider remounts. */
   useEffect(() => {
@@ -160,6 +168,7 @@ function Shell() {
             toast("Premium unlocked ✓ — welcome to the control room");
             setRoute("app");
           }}
+          onGoToDashboard={() => { setAppView("dash"); setRoute("app"); }}
         />
       )}
       {route === "about" && <About />}
