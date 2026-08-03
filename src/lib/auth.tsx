@@ -9,6 +9,7 @@ import {
 import { supabase } from "./supabase";
 
 export interface AuthUser {
+  id: string;
   email: string;
   name: string;
   premium: boolean;
@@ -21,6 +22,7 @@ interface AuthCtx {
   login: (email: string, pass: string) => Promise<string | null>;
   logout: () => void;
   purchase: (plan: string) => void;
+  refresh: () => Promise<void>;
 }
 
 const Ctx = createContext<AuthCtx | null>(null);
@@ -31,7 +33,7 @@ async function fetchProfile(userId: string, email: string): Promise<AuthUser> {
     .select("name, premium, plan")
     .eq("id", userId)
     .single();
-  return { email, name: data?.name ?? "", premium: data?.premium ?? false, plan: data?.plan ?? null };
+  return { id: userId, email, name: data?.name ?? "", premium: data?.premium ?? false, plan: data?.plan ?? null };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -77,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         plan: null,
       });
       // Set user immediately — don't wait for onAuthStateChange to avoid race condition
-      setUser({ email: e, name: name.trim(), premium: false, plan: null });
+      setUser({ id: data.user.id, email: e, name: name.trim(), premium: false, plan: null });
     }
 
     return null;
@@ -104,7 +106,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser((prev) => (prev ? { ...prev, premium: true, plan } : prev));
   }, []);
 
-  return <Ctx.Provider value={{ user, register, login, logout, purchase }}>{children}</Ctx.Provider>;
+  const refresh = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      setUser(await fetchProfile(session.user.id, session.user.email!));
+    }
+  }, []);
+
+  return <Ctx.Provider value={{ user, register, login, logout, purchase, refresh }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth(): AuthCtx {

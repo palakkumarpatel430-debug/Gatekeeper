@@ -80,6 +80,8 @@ export default function Pricing({
       return;
     }
 
+    // Store plan name so the return page can activate premium without waiting for the webhook
+    sessionStorage.setItem("pendingPlan", checkout.name);
     window.location.href = data.url;
   };
 

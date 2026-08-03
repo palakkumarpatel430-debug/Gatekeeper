@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { StoreProvider, useStore } from "./lib/store";
 import { AuthProvider, useAuth } from "./lib/auth";
+import { supabase } from "./lib/supabase";
 import type { View } from "./lib/types";
 import type { SitePage } from "./site/shared";
 import Navbar from "./components/Navbar";
@@ -25,12 +26,23 @@ import Setup from "./views/Setup";
 
 type Route = SitePage | "app";
 
+// Runs once at module load — before any React render, survives all component remounts.
+// Reads the plan name and clears both the URL param and sessionStorage immediately.
+const PAYMENT_PLAN = (() => {
+  if (new URLSearchParams(window.location.search).get("payment") !== "success") return null;
+  const plan = sessionStorage.getItem("pendingPlan") ?? "Per-Project";
+  sessionStorage.removeItem("pendingPlan");
+  window.history.replaceState({}, "", window.location.pathname);
+  return plan;
+})();
+
 function Shell() {
-  const { user } = useAuth();
+  const { user, refresh } = useAuth();
   const { toast } = useStore();
   const [route, setRoute] = useState<Route>("home");
   const [appView, setAppView] = useState<View>("entry");
   const [pendingEnter, setPendingEnter] = useState(false);
+  const [activatingPremium, setActivatingPremium] = useState(PAYMENT_PLAN !== null);
 
   /* Entering the app: premium members go in; free accounts go to pricing; guests to login. */
   const openApp = (target: View = "entry") => {
@@ -60,6 +72,44 @@ function Shell() {
   useEffect(() => {
     if (route === "app" && !user?.premium) setRoute("home");
   }, [route, user]);
+
+  /* Wait for auth to load (user !== null), then write premium to Supabase.
+     PAYMENT_PLAN is module-level so it survives StoreProvider remounts. */
+  useEffect(() => {
+    if (!activatingPremium || !user) return;
+
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setActivatingPremium(false);
+        toast("Session expired — please log in again.");
+        return;
+      }
+      const { error } = await supabase
+        .from("profiles")
+        .upsert({ id: session.user.id, premium: true, plan: PAYMENT_PLAN ?? "Per-Project" });
+      if (error) {
+        setActivatingPremium(false);
+        toast(`Could not activate premium: ${error.message}`);
+        return;
+      }
+      // Set false BEFORE refresh so the effect doesn't re-fire when user updates
+      setActivatingPremium(false);
+      await refresh();
+      setRoute("app");
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activatingPremium, user]);
+
+  if (activatingPremium) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-bg font-sans text-ink">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-accent border-t-transparent" />
+        <p className="text-lg font-semibold">Activating your premium account…</p>
+        <p className="text-sm text-ink-soft">Confirming payment with Stripe — this takes a few seconds.</p>
+      </div>
+    );
+  }
 
   if (route === "app" && user?.premium) {
     return (
@@ -122,12 +172,23 @@ function Shell() {
   );
 }
 
+function StoreWrapper({ children }: { children: ReactNode }) {
+  const { user } = useAuth();
+  // key forces a full remount (and fresh load from localStorage) when the user changes
+  const userId = user?.id ?? "guest";
+  return (
+    <StoreProvider key={userId} userId={userId}>
+      {children}
+    </StoreProvider>
+  );
+}
+
 export default function App() {
   return (
-    <StoreProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <StoreWrapper>
         <Shell />
-      </AuthProvider>
-    </StoreProvider>
+      </StoreWrapper>
+    </AuthProvider>
   );
 }

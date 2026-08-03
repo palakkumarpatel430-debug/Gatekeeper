@@ -10,7 +10,7 @@ import {
 import type { DB } from "./types";
 import { seed } from "./seed";
 
-const KEY = "gatekeeper.v3"; // bumped so the imported glass dataset loads fresh
+const BASE_KEY = "gatekeeper.v3";
 
 const DEFAULTS = {
   customers: ["Acme Powertrain", "Northstar Assembly", "Vector Stamping"],
@@ -27,10 +27,11 @@ const DEFAULTS = {
   threshold: 50,
 };
 
-function load(): DB {
+function load(userId: string): DB {
+  const key = `${BASE_KEY}.${userId}`;
   let raw: Partial<DB> = {};
   try {
-    const s = localStorage.getItem(KEY);
+    const s = localStorage.getItem(key);
     if (s) raw = JSON.parse(s);
   } catch {
     raw = {};
@@ -51,7 +52,7 @@ function load(): DB {
       auth: raw.admin?.auth || null,
     },
   };
-  return seed(db);
+  return db;
 }
 
 interface StoreCtx {
@@ -62,18 +63,19 @@ interface StoreCtx {
 
 const Ctx = createContext<StoreCtx | null>(null);
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const [db, setDb] = useState<DB>(load);
+export function StoreProvider({ children, userId }: { children: ReactNode; userId: string }) {
+  const key = `${BASE_KEY}.${userId}`;
+  const [db, setDb] = useState<DB>(() => load(userId));
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const timer = useRef<number>();
 
   useEffect(() => {
     try {
-      localStorage.setItem(KEY, JSON.stringify(db));
+      localStorage.setItem(key, JSON.stringify(db));
     } catch {
       /* storage unavailable */
     }
-  }, [db]);
+  }, [db, key]);
 
   const update = useCallback((fn: (d: DB) => void) => {
     setDb((prev) => {

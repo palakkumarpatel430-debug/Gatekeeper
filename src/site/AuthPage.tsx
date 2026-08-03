@@ -54,11 +54,12 @@ export default function AuthPage({
           </Field>
         )}
         <Field label="Email">
-          <Input type="email" placeholder="you@company.com" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
+          <Input type="email" autoComplete="username" placeholder="you@company.com" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} />
         </Field>
         <Field label="Password">
           <Input
             type="password"
+            autoComplete={mode === "register" ? "new-password" : "current-password"}
             placeholder="••••••••"
             value={f.pass}
             onChange={(e) => setF({ ...f, pass: e.target.value })}
