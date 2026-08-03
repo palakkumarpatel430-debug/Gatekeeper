@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from "react";
 import { Camera, FileSpreadsheet, MapPin, Plus } from "lucide-react";
 import { useStore } from "../lib/store";
+import { useAuth } from "../lib/auth";
+import { getLimits, fmtLimit } from "../lib/plans";
 import { KPI } from "../lib/kpi";
 import { uid, today, fmt, downscale } from "../lib/util";
 import type { Defect, Loc, SortRecord } from "../lib/types";
@@ -33,6 +35,8 @@ const emptyForm = () => ({
 
 export default function Entry() {
   const { db, update, toast } = useStore();
+  const { user } = useAuth();
+  const limits = getLimits(user?.plan);
   const [f, setF] = useState(() => ({ ...emptyForm(), customer: db.settings.customers[0] || "" }));
   const [defs, setDefs] = useState<DefRow[]>([{ key: uid(), type: "", count: 0 }]);
   const [markRow, setMarkRow] = useState<string | null>(null);
@@ -80,9 +84,30 @@ export default function Entry() {
         ? "⚠ rework + scrap exceeds bad"
         : "";
 
+  const projectName = record.project.trim();
+  const existingProjects = useMemo(() => new Set(db.records.map((r) => r.project)), [db.records]);
+  const recordsInProject = useMemo(
+    () => db.records.filter((r) => r.project === projectName).length,
+    [db.records, projectName],
+  );
+  const atProjectLimit =
+    !existingProjects.has(projectName) &&
+    existingProjects.size >= limits.projects;
+  const atRecordLimit =
+    limits.recordsPerProject !== Infinity &&
+    recordsInProject >= limits.recordsPerProject;
+
   const save = () => {
     if (!record.total) return toast("Enter total inspected");
     if (!record.customer) return toast("Pick a customer");
+    if (atProjectLimit)
+      return toast(
+        `Your plan allows ${fmtLimit(limits.projects)} project${limits.projects === 1 ? "" : "s"}. Upgrade to add more.`,
+      );
+    if (atRecordLimit)
+      return toast(
+        `Project "${projectName}" has reached the ${fmtLimit(limits.recordsPerProject)}-record limit for your plan. Upgrade for more.`,
+      );
     update((d) => d.records.unshift(record));
     toast("Saved ✓");
     setF({ ...emptyForm(), customer: f.customer });
@@ -230,8 +255,20 @@ export default function Entry() {
         </div>
         <Field label="Notes"><Textarea rows={2} placeholder="optional" value={f.notes} onChange={(e) => set("notes")(e.target.value)} /></Field>
 
+        {/* Usage meter */}
+        {limits.recordsPerProject !== Infinity && projectName && (
+          <div className="mb-3 rounded-md border border-line bg-black/40 px-4 py-2.5 text-[12px] text-ink-soft">
+            <span className="font-semibold text-white">{recordsInProject}</span> / {fmtLimit(limits.recordsPerProject)} records used
+            {" · "}
+            <span className="font-semibold text-white">{existingProjects.size}</span> / {fmtLimit(limits.projects)} project{limits.projects === 1 ? "" : "s"} used
+            {(atRecordLimit || atProjectLimit) && (
+              <span className="ml-2 font-semibold text-red-400">— limit reached · upgrade your plan</span>
+            )}
+          </div>
+        )}
+
         <div className="flex flex-wrap items-center gap-3">
-          <Btn onClick={save}>Save sort record</Btn>
+          <Btn onClick={save} disabled={atProjectLimit || atRecordLimit}>Save sort record</Btn>
           <Btn variant="ghost" onClick={() => { setF({ ...emptyForm(), customer: f.customer }); setDefs([{ key: uid(), type: "", count: 0 }]); }}>
             Clear
           </Btn>

@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { StoreProvider, useStore } from "./lib/store";
 import { AuthProvider, useAuth } from "./lib/auth";
+import { getLimits } from "./lib/plans";
 import { supabase } from "./lib/supabase";
 import type { View } from "./lib/types";
 import type { SitePage } from "./site/shared";
@@ -120,11 +121,22 @@ function Shell() {
   }
 
   if (route === "app" && user?.premium) {
+    const limits = getLimits(user.plan);
     return (
       <div className="min-h-screen bg-bg font-sans text-ink antialiased">
         <Navbar
           view={appView}
-          onNav={(v) => (v === "home" ? setRoute("home") : setAppView(v))}
+          limits={limits}
+          onNav={(v) => {
+            if (v === "home") { setRoute("home"); return; }
+            if ((v === "admin" && !limits.adminAccess) ||
+                (v === "rootcause" && !limits.rootCauseAccess) ||
+                (v === "legal" && !limits.legalAccess)) {
+              toast("Upgrade your plan to access this feature");
+              return;
+            }
+            setAppView(v);
+          }}
           onExit={() => setRoute("home")}
           userName={user.name}
         />
