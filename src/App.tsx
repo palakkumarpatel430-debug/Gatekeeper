@@ -130,6 +130,7 @@ function Shell() {
           onNav={(v) => {
             if (v === "home") { setRoute("home"); return; }
             if ((v === "admin" && !limits.adminAccess) ||
+                (v === "costing" && !limits.costingAccess) ||
                 (v === "rootcause" && !limits.rootCauseAccess) ||
                 (v === "legal" && !limits.legalAccess)) {
               toast("Upgrade your plan to access this feature");

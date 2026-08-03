@@ -6,7 +6,7 @@ const TABS: { id: View; label: string; minPlan?: "Basic" | "Industrial Pro" }[] 
   { id: "entry", label: "Sort Entry" },
   { id: "dash", label: "Dashboard" },
   { id: "records", label: "Records" },
-  { id: "costing", label: "Costing" },
+  { id: "costing", label: "Costing", minPlan: "Basic" },
   { id: "report", label: "Report" },
   { id: "rootcause", label: "Root Cause", minPlan: "Basic" },
   { id: "legal", label: "Legal", minPlan: "Basic" },
@@ -16,6 +16,7 @@ const TABS: { id: View; label: string; minPlan?: "Basic" | "Industrial Pro" }[] 
 
 function isTabLocked(tab: typeof TABS[number], limits: PlanLimits): boolean {
   if (tab.id === "admin") return !limits.adminAccess;
+  if (tab.id === "costing") return !limits.costingAccess;
   if (tab.id === "rootcause") return !limits.rootCauseAccess;
   if (tab.id === "legal") return !limits.legalAccess;
   return false;

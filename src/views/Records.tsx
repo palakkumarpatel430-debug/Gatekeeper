@@ -1,16 +1,20 @@
 import { useState } from "react";
 import { useStore } from "../lib/store";
+import { useAuth } from "../lib/auth";
 import { KPI } from "../lib/kpi";
 import { downloadFile, fmt } from "../lib/util";
 import { Btn, cslTagKind, Empty, Field, Input, Panel, TableWrap, Tag, Td, Th } from "../components/ui";
 
 export default function Records() {
   const { db, update, toast } = useStore();
+  const { user } = useAuth();
   const [q, setQ] = useState("");
 
   const recs = db.records.filter(
     (r) => !q || [r.part, r.box, r.customer, r.operator].join(" ").toLowerCase().includes(q.toLowerCase())
   );
+
+  const stamp = `# Exported by: ${user?.email ?? "unknown"} | Plan: ${user?.plan ?? "Premium"} | ${new Date().toISOString()}`;
 
   const exportCsv = () => {
     const rows: (string | number)[][] = [
@@ -25,11 +29,8 @@ export default function Records() {
         r.notes || "",
       ]);
     });
-    downloadFile(
-      "gatekeeper-records.csv",
-      rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n"),
-      "text/csv"
-    );
+    const csv = [stamp, rows.map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(",")).join("\n")].join("\n");
+    downloadFile("gatekeeper-records.csv", csv, "text/csv");
   };
 
   return (
@@ -39,7 +40,7 @@ export default function Records() {
           <Input placeholder="part, box, customer, operator" value={q} onChange={(e) => setQ(e.target.value)} />
         </Field>
         <Btn variant="ghost" sm onClick={exportCsv}>Export CSV</Btn>
-        <Btn variant="ghost" sm onClick={() => downloadFile("gatekeeper-backup.json", JSON.stringify(db, null, 2), "application/json")}>
+        <Btn variant="ghost" sm onClick={() => downloadFile("gatekeeper-backup.json", JSON.stringify({ _export: { by: user?.email, plan: user?.plan, at: new Date().toISOString() }, ...db }, null, 2), "application/json")}>
           Backup (JSON)
         </Btn>
         <Btn

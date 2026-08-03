@@ -30,10 +30,24 @@ const Ctx = createContext<AuthCtx | null>(null);
 async function fetchProfile(userId: string, email: string): Promise<AuthUser> {
   const { data } = await supabase
     .from("profiles")
-    .select("name, premium, plan")
+    .select("name, premium, plan, plan_expires_at")
     .eq("id", userId)
     .single();
-  return { id: userId, email, name: data?.name ?? "", premium: data?.premium ?? false, plan: data?.plan ?? null };
+
+  let premium = data?.premium ?? false;
+
+  // Downgrade if subscription has expired
+  if (premium && data?.plan_expires_at) {
+    if (new Date(data.plan_expires_at) < new Date()) {
+      premium = false;
+      supabase.from("profiles").update({ premium: false }).eq("id", userId);
+    }
+  }
+
+  // Record last seen (fire-and-forget — ignore errors)
+  supabase.from("profiles").update({ last_seen: new Date().toISOString() }).eq("id", userId);
+
+  return { id: userId, email, name: data?.name ?? "", premium, plan: data?.plan ?? null };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -91,6 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       password: pass,
     });
     if (error) return error.message;
+    // Kick all other active sessions — enforce single concurrent session
+    await supabase.auth.signOut({ scope: "others" });
     return null;
   }, []);
 

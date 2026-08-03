@@ -3,6 +3,7 @@ export interface PlanLimits {
   recordsPerProject: number; // max sort records per project
   parts: number;             // max parts in Setup
   adminAccess: boolean;      // billing / payroll / admin view
+  costingAccess: boolean;    // costing / billing analysis view
   rootCauseAccess: boolean;  // root-cause analysis view
   legalAccess: boolean;      // legal / containment letter view
   exportCSV: boolean;        // CSV / JSON export buttons
@@ -15,6 +16,7 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     recordsPerProject: 10,
     parts: 3,
     adminAccess: false,
+    costingAccess: false,
     rootCauseAccess: false,
     legalAccess: false,
     exportCSV: false,
@@ -25,6 +27,7 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     recordsPerProject: 50,
     parts: 20,
     adminAccess: false,
+    costingAccess: true,
     rootCauseAccess: true,
     legalAccess: true,
     exportCSV: true,
@@ -35,6 +38,7 @@ export const PLAN_LIMITS: Record<string, PlanLimits> = {
     recordsPerProject: Infinity,
     parts: Infinity,
     adminAccess: true,
+    costingAccess: true,
     rootCauseAccess: true,
     legalAccess: true,
     exportCSV: true,
